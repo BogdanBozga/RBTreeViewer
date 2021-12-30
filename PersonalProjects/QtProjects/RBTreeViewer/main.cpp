@@ -1,16 +1,4 @@
-//#include "mainwindow.h"
-
 #include <QApplication>
-
-
-
-
-
-//#ifndef MAINWINDOW_H
-//#define MAINWINDOW_H
-
-//#include <QMainWindow>
-//#include "RBNode.h"
 #include <QLabel>
 #include <QScrollArea>
 #include <QLayout>
@@ -20,9 +8,10 @@
 #include <math.h>
 #include <iostream>
 #include <sstream>
-
-
-
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <QLineEdit>
+#include <QIntValidator>
 
 struct RBNode
 {
@@ -367,6 +356,7 @@ struct RBTree
                 }
             }
         root->col = RBNode::BLACK;
+
     }
 
     void inorder(RBNode* T)
@@ -494,11 +484,6 @@ struct RBTree
 };
 
 
-
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
-
 class MainWindow : public QWidget
 {
 //    Q_OBJECT
@@ -516,29 +501,85 @@ private:
     double const unitarUnit = 55.0;
     int treeHeight;
     int nodeHeight;
+    char *number;
+    int x;
+    int y;
+    QString color;
+    RBTree *tree;
+    RBNode *currentNode;
+    QPoint  currentDrawingPoint;
+
+    QWidget *window;
+    QPushButton *insertButton;
+    QPushButton *deleteButton;
+    QPushButton *searchButton;
+    QLineEdit *textEdit;
+//    QPainter painter;
+public slots:
+    void insertNode(){
+        tree->RBInsert(tree->createNode(textEdit->text().toInt()));
+        drawTree();
+    }
+    void deleteNode(){
+        currentNode = tree->search(tree->root, textEdit->text().toInt());
+        if (!tree->isNil(currentNode)) tree->del(currentNode);
+        else std::cout << "RB: Node not found" << std::endl;
+        drawTree();
+    }
+    void searchNode(){
+        currentNode = tree->search(tree->root, textEdit->text().toInt());
+    }
+
+
 public:
     MainWindow(QWidget *parent = nullptr){
-        QTimer *timer = new QTimer(this);
-    //    connect(timer, &QTimer::timeout, this, QOverload<>::of(&MainWindow::update));
-        timer->start(1000);
-        setWindowTitle(tr("Analog Clock"));
-        resize(200, 200);
+//        QTimer *timer = new QTimer(this);
+//    //    connect(timer, &QTimer::timeout, this, QOverload<>::of(&MainWindow::update));
+////        timer->start(1000);
+////        setWindowTitle(tr("Analog Clock"));
+        resize(1000, 1000);
+
+        tree = new RBTree();
+            insertButton = new QPushButton;
+            deleteButton = new QPushButton;
+            searchButton = new QPushButton;
+            textEdit = new QLineEdit;
+            textEdit->setValidator( new QIntValidator(0, 9999, this));
+            textEdit->setMinimumSize(50,40);
+            textEdit->setMaximumSize(50,40);
+            insertButton->setText("Insert");
+            deleteButton->setText("Delete");
+            searchButton->setText("Search");
+            QObject::connect(insertButton,&QPushButton::clicked,this,&MainWindow::insertNode);
+            QObject::connect(deleteButton,&QPushButton::clicked,this,&MainWindow::deleteNode);
+            QObject::connect(searchButton,&QPushButton::clicked,this,&MainWindow::searchNode);
+
+            window = new QWidget;
+            window->resize(70, 80);
+            window->setWindowTitle("Remote");
+            QVBoxLayout *layout = new QVBoxLayout(window);
+            layout->addWidget(textEdit);
+            layout->addWidget(insertButton);
+            layout->addWidget(deleteButton);
+            layout->addWidget(searchButton);
+            window->show();
 
         this->redColor = QColor(255, 0, 0);
         this->blackColor = QColor(0,0,0);
         this->whiteColor = QColor(255,255,255);
-
-        RBTree* RB = new RBTree();
-        RB->RBInsert(RB->createNode(5));
-
-        drawTree(RB);
-        setData(613,"BLACK",10,10);
+//        painter = new QPainter();
+//        painter.begin(this);
+//        QPainter Painter(this);
+//        painter.
+//        painter.setRenderHint(QPainter::Antialiasing);
+//        QFont font = painter.font();
+//        font.setPixelSize(20);
+//        painter.setFont(font);
 
     }
-//    ~MainWindow();
+
 
     void setData(int valueNumber, QString color, int xCoordonate, int yCoordonate){
-
         QString numberQString = QString::number(valueNumber);
         std::string fname = numberQString.toStdString();
         this->number = new char [fname.size()+1];
@@ -550,16 +591,14 @@ public:
     }
 protected:
     void paintEvent(QPaintEvent *event) override{
-        x = currentDrawingPoint.x();
-        y = currentDrawingPoint.y();
+//        x = currentDrawingPoint.x();
+//        y = currentDrawingPoint.y();
 
         QPainter painter(this);
         painter.setRenderHint(QPainter::Antialiasing);
         QFont font = painter.font();
         font.setPixelSize(20);
         painter.setFont(font);
-
-
 
         QRect rectangle(x, y, width, height); // the big one for the circle (arc)
         QRect rectangleText((x+width/2-textWidth/2), (y+height/2-textHeight/2), textWidth, textHeight); // don't touch this formula, trust my
@@ -570,36 +609,26 @@ protected:
             painter.setPen(redColor);
         }
         painter.drawArc(rectangle, startAngle, spanAngle);
-
-
         painter.setPen(whiteColor);
         painter.drawText(rectangleText, Qt::AlignCenter, tr(number));
     }
 
-//    void paintEvent();
-    char *number;
-    int x;
-    int y;
-    QString color;
-    RBTree *tree;
-    RBNode *currentNode;
-
-    QPoint  currentDrawingPoint;
 
 protected:
     void drawNode(RBNode *node_, QPoint coodronate){
         //    this->nodeHeight = tree->depth(node_);
-
-
             //QString::fromUtf8( node_->toString().data(), node_->toString().size() ); //********** conversion from std::string to QString, userd in next functin
             setData(node_->key,QString::fromUtf8( node_->toString().data(), node_->toString().size() ),coodronate.x(),coodronate.y());
             update();
         }
-    void drawTree(RBTree *tree_){
-        this->tree = tree_;
-        this->treeHeight = tree_->depth(tree_->root);
-        crossingFunction(tree_->root,QPoint(1920/2,10));
+
+
+    void drawTree(){
+//        this->tree = tree_;
+        this->treeHeight = tree->depth(tree->root);
+        crossingFunction(tree->root,QPoint(QWidget::width()/2,10));
     }
+
 
     void crossingFunction(RBNode *node_, QPoint coordonatePoint){
         if(node_ == RBNode::Nil){
@@ -612,15 +641,8 @@ protected:
             crossingFunction(node_->right,rightPoint);
             drawNode(node_,coordonatePoint);
         }
-
     }
-
-
-
 };
-//#endif // MAINWINDOW_H
-
-
 
 
 
