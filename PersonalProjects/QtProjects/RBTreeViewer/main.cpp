@@ -488,6 +488,41 @@ struct RBTree
 };
 
 
+
+
+
+
+
+
+struct LinkedList{
+    char * value;
+    int x;
+    int y;
+    QString color;
+    LinkedList *next;
+    LinkedList(){
+        next = NULL;
+    }
+
+    void push(LinkedList** head, int value_, int x_, int y_, QString color_){
+//        qWarning() << value_;
+        LinkedList *new_node = new LinkedList;
+        QString numberQString = QString::number(value_);
+        std::string fname = numberQString.toStdString();
+        new_node->value = new char [fname.size()+1];
+        std::strcpy( new_node->value, fname.c_str());
+        new_node->x = x_;
+        new_node->y = y_;
+        new_node->color = color_;
+        new_node->next = (*head);
+        (*head) = new_node;
+    }
+};
+
+
+
+
+
 class MainWindow : public QWidget
 {
 //    Q_OBJECT
@@ -503,12 +538,14 @@ private:
     double const textHeight = 25; // specifical size for
     double const textWidth = 50;   // 4 decimal number maximum
     double const unitarUnit = 55.0;
+    bool drawPrepare = false;
     int treeHeight;
     int nodeHeight;
-    char *number;
-    int x;
-    int y;
-    QString color;
+//    char *number;
+//    int x;
+//    int y;
+    LinkedList *auxList;
+//    QString color;
     RBTree *tree;
     RBNode *currentNode;
     QPoint  currentDrawingPoint;
@@ -546,14 +583,14 @@ public:
 ////        setWindowTitle(tr("Analog Clock"));
         resize(1000, 1000);
         drawPixmap = QPixmap(1000,1000);
-        drawPixmap.fill(Qt::green);
+        drawPixmap.fill(Qt::gray);
         l = new QVBoxLayout(this);
         label = new QLabel(this);
         label->setStyleSheet("QLabel { background-color : red; color : blue; }");
         label->resize(1000,1000);
         label->setBackgroundRole(QPalette::Light);
         label->setPixmap(drawPixmap);
-//        l->add (label);
+
 
         tree = new RBTree();
             insertButton = new QPushButton;
@@ -583,63 +620,69 @@ public:
         this->redColor = QColor(255, 0, 0);
         this->blackColor = QColor(0,0,0);
         this->whiteColor = QColor(255,255,255);
-//        painter = new QPainter();
-//        painter.begin(this);
-//        QPainter Painter(this);
-//        painter.
-//        painter.setRenderHint(QPainter::Antialiasing);
-//        QFont font = painter.font();
-//        font.setPixelSize(20);
-//        painter.setFont(font);
-
     }
 
 
     void setData(int valueNumber, QString color, int xCoordonate, int yCoordonate){
-        QString numberQString = QString::number(valueNumber);
-        std::string fname = numberQString.toStdString();
-        this->number = new char [fname.size()+1];
-        std::strcpy( this->number, fname.c_str());
-        this->color = color;
-        this->x = xCoordonate;
-        this->y = yCoordonate;
-        qWarning() <<"##########starting in setdata";
-        qWarning() << number;
-        qWarning() << color;
-        qWarning() << x;
-        qWarning() << y;
-        qWarning() << "###############end in setdata";
-
-
-
-
-
-    //    update();
+//        QString numberQString = QString::number(valueNumber);
+//        std::string fname = numberQString.toStdString();
+//        this->number = new char [fname.size()+1];
+//        std::strcpy( this->number, fname.c_str());
+//        this->color = color;
+//        this->x = xCoordonate;
+//        this->y = yCoordonate;
+        auxList->push(&auxList, valueNumber, xCoordonate, yCoordonate, color);
+        drawPrepare = true;
+//        update();
     }
 protected:
     void paintEvent(QPaintEvent *event) override{
 //        x = currentDrawingPoint.x();
 //        y = currentDrawingPoint.y();
-        label->clear();
-        QPainter painter(&drawPixmap);
-        painter.setRenderHint(QPainter::Antialiasing);
-        QFont font = painter.font();
-        font.setPixelSize(20);
-        painter.setFont(font);
 
-        QRect rectangle(x, y, width, height); // the big one for the circle (arc)
-        QRect rectangleText((x+width/2-textWidth/2), (y+height/2-textHeight/2), textWidth, textHeight); // don't touch this formula, trust my
-//        qWarning()<<color;
-        if(color=="BLACK"){
-            painter.setPen(blackColor);
-        }else if(color == "RED"){
-            painter.setPen(redColor);
+        if(drawPrepare){
+            label->clear();
+            drawPixmap = QPixmap(1000,1000);
+            drawPixmap.fill(Qt::gray);
+            label->setPixmap(drawPixmap);
+
+            QPainter painter(&drawPixmap);
+            painter.setRenderHint(QPainter::Antialiasing);
+            QFont font = painter.font();
+            font.setPixelSize(30);
+            painter.setFont(font);
+
+            while(auxList->next != NULL){
+                int x = auxList->x;
+                int y = auxList->y;
+                char *number = auxList->value;
+                QString color = auxList->color;
+
+                LinkedList *d = auxList;
+                free(d);
+                auxList = auxList->next;
+
+                QRect rectangle(x, y, width, height); // the big one for the circle (arc)
+                QRect rectangleText((x+width/2-textWidth/2), (y+height/2-textHeight/2), textWidth, textHeight); // don't touch this formula, trust my
+//                qWarning() <<"------- in draw";
+//                qWarning() << number;
+//                qWarning() << color;
+//                qWarning() << x;
+//                qWarning() << y;
+//                qWarning() << "--------------------";
+                if(color=="BLACK"){
+                    painter.setPen(blackColor);
+                }else if(color == "RED"){
+                    painter.setPen(redColor);
+                }
+                painter.drawArc(rectangle, startAngle, spanAngle);
+                painter.setPen(whiteColor);
+
+                painter.drawText(rectangleText, Qt::AlignCenter, tr(number));
+                label->setPixmap(drawPixmap);
+            }
+            drawPrepare = false;
         }
-        painter.drawArc(rectangle, startAngle, spanAngle);
-        painter.setPen(whiteColor);
-
-        painter.drawText(rectangleText, Qt::AlignCenter, tr(number));
-        label->setPixmap(drawPixmap);
     }
 
 
@@ -649,24 +692,31 @@ protected:
         //    this->nodeHeight = tree->depth(node_);
             //QString::fromUtf8( node_->toString().data(), node_->toString().size() ); //********** conversion from std::string to QString, userd in next functin
             setData(node_->key,QString::fromUtf8( node_->toString().data(), node_->toString().size() ),coodronate.x(),coodronate.y());
-//            qWarning() <<
-            update();
-//            QThread::sleep(1);
+//            qWarning() <<"################      starting in setdata";
+//            qWarning() << number;
+//            qWarning() << color;
+//            qWarning() << x;
+//            qWarning() << y;
+//            qWarning() << "###############      end in setdata";
+//            drawPrepare = true;
+//            update();
         }
 
 
     void drawTree(){
-        qWarning() << "--------------";
+//        qWarning() << "--------------";
 //        this->tree = tree_;
+        auxList = new LinkedList;
         this->treeHeight = tree->depth(tree->root);
         crossingFunction(tree->root,QPoint(QWidget::width()/2,10));
+        update();
     }
 
 
     void crossingFunction(RBNode *node_, QPoint coordonatePoint){
 
         if(node_ == RBNode::Nil){
-            qWarning() << "null ";
+//            qWarning() << "null ";
         }else{
 //            qWarning() << node_->key;
 //            int currentDepth = tree->depth(node_);
@@ -683,9 +733,9 @@ protected:
 //                        QPoint rightPoint(coordonatePoint.x()+pow(2,currentDepth)*unitarUnit, coordonatePoint.y()+unitarUnit);
             //            crossingFunction(node_->left,leftPoint);
 //                        crossingFunction(node_->right,rightPoint);
-            qWarning() << node_->key;
-            qWarning() << tree->depth(node_);
-            qWarning()<< coordonatePoint;
+//            qWarning() << node_->key;
+//            qWarning() << tree->depth(node_);
+//            qWarning()<< coordonatePoint;
             drawNode(node_,coordonatePoint);
         }
     }
