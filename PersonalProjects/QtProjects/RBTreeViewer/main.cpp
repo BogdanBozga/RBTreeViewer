@@ -14,7 +14,8 @@
 #include <QIntValidator>
 #include <QThread>
 #include <QPixmap>
-
+#include <QMainWindow>
+#include <QCloseEvent>
 
 struct RBNode
 {
@@ -498,13 +499,15 @@ struct LinkedList{
     char * value;
     int x;
     int y;
+    int parent_x;//used for drawing the connecting lines
+    int parent_y;
     QString color;
     LinkedList *next;
     LinkedList(){
         next = NULL;
     }
 
-    void push(LinkedList** head, int value_, int x_, int y_, QString color_){
+    void push(LinkedList** head, int value_, int x_, int y_, QString color_,int parent_x_, int parent_y_){
 //        qWarning() << value_;
         LinkedList *new_node = new LinkedList;
         QString numberQString = QString::number(value_);
@@ -513,6 +516,8 @@ struct LinkedList{
         std::strcpy( new_node->value, fname.c_str());
         new_node->x = x_;
         new_node->y = y_;
+        parent_x = parent_x_;
+        parent_y = parent_y_;
         new_node->color = color_;
         new_node->next = (*head);
         (*head) = new_node;
@@ -531,7 +536,7 @@ private:
     int const spanAngle = 360 * 16;
     QColor redColor;
     QColor blackColor;
-    QColor whiteColor;
+    QColor greenColor;
 
     double const width = 55.0;
     double const height = 55.0;
@@ -540,7 +545,7 @@ private:
     double const unitarUnit = 55.0;
     bool drawPrepare = false;
     int treeHeight;
-    int nodeHeight;
+//    int nodeHeight;
 //    char *number;
 //    int x;
 //    int y;
@@ -558,6 +563,7 @@ private:
     QPixmap drawPixmap;
     QVBoxLayout *l;
     QLabel *label;
+    QScrollArea *scrollArea;
 //    QPainter painter;
 public slots:
     void insertNode(){
@@ -581,16 +587,22 @@ public:
 //    //    connect(timer, &QTimer::timeout, this, QOverload<>::of(&MainWindow::update));
 ////        timer->start(1000);
 ////        setWindowTitle(tr("Analog Clock"));
-        resize(1000, 1000);
-        drawPixmap = QPixmap(1000,1000);
+//        resize(800, 800);
+        drawPixmap = QPixmap(2000,1000);
         drawPixmap.fill(Qt::gray);
         l = new QVBoxLayout(this);
         label = new QLabel(this);
         label->setStyleSheet("QLabel { background-color : red; color : blue; }");
-        label->resize(1000,1000);
+        label->resize(drawPixmap.width(),drawPixmap.height());
         label->setBackgroundRole(QPalette::Light);
         label->setPixmap(drawPixmap);
 
+
+        scrollArea = new QScrollArea;
+        scrollArea->resize(drawPixmap.width(), drawPixmap.height());
+        scrollArea->setBackgroundRole(QPalette::Dark);
+        scrollArea->setWidget(label);
+        scrollArea->show();
 
         tree = new RBTree();
             insertButton = new QPushButton;
@@ -616,14 +628,25 @@ public:
             layout->addWidget(deleteButton);
             layout->addWidget(searchButton);
             window->show();
+//            window->
+//            setCentralWidget(window);
+//            QMainWindow::setCentralWidget(window);
+
+
+
+//            QLayout::addWidget(textEdit)
+//            this->setLayout(layout);
 
         this->redColor = QColor(255, 0, 0);
         this->blackColor = QColor(0,0,0);
-        this->whiteColor = QColor(255,255,255);
+        this->greenColor = QColor(0,100,0);
     }
 
-
-    void setData(int valueNumber, QString color, int xCoordonate, int yCoordonate){
+//    void show(){
+//        window->show();
+//    }
+    
+    void setData(int valueNumber, QString color, int xCoordonate, int yCoordonate,  int parent_x, int parent_y){
 //        QString numberQString = QString::number(valueNumber);
 //        std::string fname = numberQString.toStdString();
 //        this->number = new char [fname.size()+1];
@@ -631,10 +654,17 @@ public:
 //        this->color = color;
 //        this->x = xCoordonate;
 //        this->y = yCoordonate;
-        auxList->push(&auxList, valueNumber, xCoordonate, yCoordonate, color);
+//        auxList->push(&auxList, valueNumber, xCoordonate, yCoordonate, color);
+        auxList->push(&auxList, valueNumber, xCoordonate, yCoordonate, color,parent_x,parent_y);
         drawPrepare = true;
 //        update();
     }
+
+//    void setData(int valueNumber, QString color, int xCoordonate, int yCoordonate, int parent_x, int parent_y){
+//        auxList->push(&auxList, valueNumber, xCoordonate, yCoordonate, color,parent_x,parent_y);
+//        drawPrepare = true;
+//    }
+
 protected:
     void paintEvent(QPaintEvent *event) override{
 //        x = currentDrawingPoint.x();
@@ -642,7 +672,7 @@ protected:
 
         if(drawPrepare){
             label->clear();
-            drawPixmap = QPixmap(1000,1000);
+            drawPixmap = QPixmap(2000,1000);
             drawPixmap.fill(Qt::gray);
             label->setPixmap(drawPixmap);
 
@@ -670,28 +700,68 @@ protected:
 //                qWarning() << x;
 //                qWarning() << y;
 //                qWarning() << "--------------------";
+
+//                painter.drawArc(rectangle, startAngle, spanAngle);
+//                painter.setPen(greenColor);
+
+//                painter.drawText(rectangleText, Qt::AlignCenter, tr(number));
+
+
+
+                // for drawing the null nodes and the lines connecting them
+//                painter.setPen(blackColor);
+//                QRect rectangleNullLeft(x-unitarUnit/2, y+unitarUnit, width, height); // the big one for the circle (arc)
+//                QRect rectangleNullRight(x+unitarUnit/2, y+unitarUnit, width, height); // the big one for the circle (arc)
+
+//                painter.drawArc(rectangleNullLeft, startAngle, spanAngle);
+//                painter.drawArc(rectangleNullRight, startAngle, spanAngle);
+//                painter.drawLine(rectangleNullLeft.x()+unitarUnit/2,rectangleNullLeft.y(),rectangle.x()+unitarUnit/2,rectangle.y()+unitarUnit);
+//                painter.drawLine(rectangleNullRight.x()+unitarUnit/2,rectangleNullLeft.y(),rectangle.x()+unitarUnit/2,rectangle.y()+unitarUnit);
                 if(color=="BLACK"){
                     painter.setPen(blackColor);
                 }else if(color == "RED"){
                     painter.setPen(redColor);
                 }
+
                 painter.drawArc(rectangle, startAngle, spanAngle);
-                painter.setPen(whiteColor);
+                painter.setPen(greenColor);
 
                 painter.drawText(rectangleText, Qt::AlignCenter, tr(number));
-                label->setPixmap(drawPixmap);
+//                qWarning() << "?????????????????????????????????";
+//                qWarning() << number;
+//                qWarning() << x;
+//                qWarning() << y;
+//                qWarning() << auxList->parent_x;
+//                qWarning() << auxList->parent_y;
+//                qWarning() << "?????????????????????????????????";
+                if(auxList->parent_x != -1){
+//                    qWarning() << "in draw line";
+                    double parentLineDraw_x = auxList->parent_x+unitarUnit/2;
+                    double parentLineDraw_y = auxList->parent_y+unitarUnit;
+
+                    double childLineDraw_x = x+unitarUnit/2;
+                    double childLineDraw_y = y;
+
+                    painter.drawLine(parentLineDraw_x,parentLineDraw_y,childLineDraw_x,childLineDraw_y);
+                }
             }
             drawPrepare = false;
+            label->setPixmap(drawPixmap);
         }
     }
 
 
 
 protected:
-    void drawNode(RBNode *node_, QPoint coodronate){
+    void drawNode(RBNode *node_, QPoint coodronate, QPoint parentPoint){
         //    this->nodeHeight = tree->depth(node_);
             //QString::fromUtf8( node_->toString().data(), node_->toString().size() ); //********** conversion from std::string to QString, userd in next functin
-            setData(node_->key,QString::fromUtf8( node_->toString().data(), node_->toString().size() ),coodronate.x(),coodronate.y());
+//            setData(node_->key,QString::fromUtf8( node_->toString().data(), node_->toString().size() ),coodronate.x(),coodronate.y());
+//            if(node_ != tree->root){
+                setData(node_->key,QString::fromUtf8( node_->toString().data(), node_->toString().size() ),coodronate.x(),coodronate.y(),  parentPoint.x(), parentPoint.y());
+//            }else{
+//                setData(node_->key,QString::fromUtf8( node_->toString().data(), node_->toString().size() ),coodronate.x(),coodronate.y());
+//            }
 //            qWarning() <<"################      starting in setdata";
 //            qWarning() << number;
 //            qWarning() << color;
@@ -708,12 +778,12 @@ protected:
 //        this->tree = tree_;
         auxList = new LinkedList;
         this->treeHeight = tree->depth(tree->root);
-        crossingFunction(tree->root,QPoint(QWidget::width()/2,10));
+        crossingFunction(tree->root, QPoint(drawPixmap.width()/2,10), QPoint(-1,-1));
         update();
     }
 
 
-    void crossingFunction(RBNode *node_, QPoint coordonatePoint){
+    void crossingFunction(RBNode *node_, QPoint coordonatePoint, QPoint parentCoordonatePoint){
 
         if(node_ == RBNode::Nil){
 //            qWarning() << "null ";
@@ -722,12 +792,14 @@ protected:
 //            int currentDepth = tree->depth(node_);
             if(!(node_->left==RBNode::Nil)){
                 QPoint leftPoint(coordonatePoint.x()-pow(2,tree->depth(node_->left))*unitarUnit, coordonatePoint.y()+unitarUnit); // this only look like easy mathematic formula to create, it's not
-                crossingFunction(node_->left,leftPoint);
+//                parentCoordonatePoint = QPoint(coordonatePoint.x(), coordonatePoint.y());
+                crossingFunction(node_->left,leftPoint,QPoint(coordonatePoint.x(), coordonatePoint.y()));
             }
 
             if(!(node_->right==RBNode::Nil)){
                 QPoint rightPoint(coordonatePoint.x()+pow(2,tree->depth(node_->right))*unitarUnit, coordonatePoint.y()+unitarUnit);
-                crossingFunction(node_->right,rightPoint);
+//                parentCoordonatePoint = QPoint(coordonatePoint.x(), coordonatePoint.y());
+                crossingFunction(node_->right,rightPoint, QPoint(coordonatePoint.x(), coordonatePoint.y()));
             }
             //            QPoint leftPoint(coordonatePoint.x()-pow(2,tree->depth(node_->left))*unitarUnit, coordonatePoint.y()+unitarUnit); // this only look like easy mathematic formula to create, it's not
 //                        QPoint rightPoint(coordonatePoint.x()+pow(2,currentDepth)*unitarUnit, coordonatePoint.y()+unitarUnit);
@@ -736,7 +808,7 @@ protected:
 //            qWarning() << node_->key;
 //            qWarning() << tree->depth(node_);
 //            qWarning()<< coordonatePoint;
-            drawNode(node_,coordonatePoint);
+            drawNode(node_,coordonatePoint,parentCoordonatePoint);
         }
     }
 };
@@ -748,5 +820,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
+//    w.setVisible(false);
+//    w.hide();
     return a.exec();
 }
