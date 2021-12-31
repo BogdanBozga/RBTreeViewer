@@ -12,6 +12,9 @@
 #include <QVBoxLayout>
 #include <QLineEdit>
 #include <QIntValidator>
+#include <QThread>
+#include <QPixmap>
+
 
 struct RBNode
 {
@@ -30,7 +33,8 @@ struct RBNode
     std::string toString()
     {
         std::ostringstream os;
-        os << key << ((col == RBNode::RED) ? ":r" : ":b");
+//        os << key << ((col == RBNode::RED) ? ":r" : ":b");
+        os <<((col == RBNode::RED) ? "RED" : "BLACK");
         return os.str();
     }
 
@@ -514,6 +518,9 @@ private:
     QPushButton *deleteButton;
     QPushButton *searchButton;
     QLineEdit *textEdit;
+    QPixmap drawPixmap;
+    QVBoxLayout *l;
+    QLabel *label;
 //    QPainter painter;
 public slots:
     void insertNode(){
@@ -538,6 +545,15 @@ public:
 ////        timer->start(1000);
 ////        setWindowTitle(tr("Analog Clock"));
         resize(1000, 1000);
+        drawPixmap = QPixmap(1000,1000);
+        drawPixmap.fill(Qt::green);
+        l = new QVBoxLayout(this);
+        label = new QLabel(this);
+        label->setStyleSheet("QLabel { background-color : red; color : blue; }");
+        label->resize(1000,1000);
+        label->setBackgroundRole(QPalette::Light);
+        label->setPixmap(drawPixmap);
+//        l->add (label);
 
         tree = new RBTree();
             insertButton = new QPushButton;
@@ -587,14 +603,25 @@ public:
         this->color = color;
         this->x = xCoordonate;
         this->y = yCoordonate;
+        qWarning() <<"##########starting in setdata";
+        qWarning() << number;
+        qWarning() << color;
+        qWarning() << x;
+        qWarning() << y;
+        qWarning() << "###############end in setdata";
+
+
+
+
+
     //    update();
     }
 protected:
     void paintEvent(QPaintEvent *event) override{
 //        x = currentDrawingPoint.x();
 //        y = currentDrawingPoint.y();
-
-        QPainter painter(this);
+        label->clear();
+        QPainter painter(&drawPixmap);
         painter.setRenderHint(QPainter::Antialiasing);
         QFont font = painter.font();
         font.setPixelSize(20);
@@ -602,16 +629,19 @@ protected:
 
         QRect rectangle(x, y, width, height); // the big one for the circle (arc)
         QRect rectangleText((x+width/2-textWidth/2), (y+height/2-textHeight/2), textWidth, textHeight); // don't touch this formula, trust my
-
+//        qWarning()<<color;
         if(color=="BLACK"){
             painter.setPen(blackColor);
-        }else{
+        }else if(color == "RED"){
             painter.setPen(redColor);
         }
         painter.drawArc(rectangle, startAngle, spanAngle);
         painter.setPen(whiteColor);
+
         painter.drawText(rectangleText, Qt::AlignCenter, tr(number));
+        label->setPixmap(drawPixmap);
     }
+
 
 
 protected:
@@ -619,11 +649,14 @@ protected:
         //    this->nodeHeight = tree->depth(node_);
             //QString::fromUtf8( node_->toString().data(), node_->toString().size() ); //********** conversion from std::string to QString, userd in next functin
             setData(node_->key,QString::fromUtf8( node_->toString().data(), node_->toString().size() ),coodronate.x(),coodronate.y());
+//            qWarning() <<
             update();
+//            QThread::sleep(1);
         }
 
 
     void drawTree(){
+        qWarning() << "--------------";
 //        this->tree = tree_;
         this->treeHeight = tree->depth(tree->root);
         crossingFunction(tree->root,QPoint(QWidget::width()/2,10));
@@ -631,14 +664,28 @@ protected:
 
 
     void crossingFunction(RBNode *node_, QPoint coordonatePoint){
-        if(node_ == RBNode::Nil){
 
+        if(node_ == RBNode::Nil){
+            qWarning() << "null ";
         }else{
-            int currentDepth = tree->depth(node_);
-            QPoint leftPoint(coordonatePoint.x()-pow(2,currentDepth)*unitarUnit, coordonatePoint.y()+unitarUnit); // this only look like easy mathematic formula to create, it's not
-            QPoint rightPoint(coordonatePoint.x()+pow(2,currentDepth)*unitarUnit, coordonatePoint.y()+unitarUnit);
-            crossingFunction(node_->left,leftPoint);
-            crossingFunction(node_->right,rightPoint);
+//            qWarning() << node_->key;
+//            int currentDepth = tree->depth(node_);
+            if(!(node_->left==RBNode::Nil)){
+                QPoint leftPoint(coordonatePoint.x()-pow(2,tree->depth(node_->left))*unitarUnit, coordonatePoint.y()+unitarUnit); // this only look like easy mathematic formula to create, it's not
+                crossingFunction(node_->left,leftPoint);
+            }
+
+            if(!(node_->right==RBNode::Nil)){
+                QPoint rightPoint(coordonatePoint.x()+pow(2,tree->depth(node_->right))*unitarUnit, coordonatePoint.y()+unitarUnit);
+                crossingFunction(node_->right,rightPoint);
+            }
+            //            QPoint leftPoint(coordonatePoint.x()-pow(2,tree->depth(node_->left))*unitarUnit, coordonatePoint.y()+unitarUnit); // this only look like easy mathematic formula to create, it's not
+//                        QPoint rightPoint(coordonatePoint.x()+pow(2,currentDepth)*unitarUnit, coordonatePoint.y()+unitarUnit);
+            //            crossingFunction(node_->left,leftPoint);
+//                        crossingFunction(node_->right,rightPoint);
+            qWarning() << node_->key;
+            qWarning() << tree->depth(node_);
+            qWarning()<< coordonatePoint;
             drawNode(node_,coordonatePoint);
         }
     }
